@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Test Webpush</title>
+    <script>
+      const publicKey = 'BANR52ZS7O03sN-OeDUosQ6MU45JIIlDO5z90KpaHQPhLsFZcG-f7Z9CRrmzErYoNO_clABmEgSD6qjvlrZ9-gQ'
+      let subscription = null
+      async function register () {
+        const serviceWorker = await navigator.serviceWorker.register("public/worker.js", {
+          scope: "/public/"
+        })
+        subscription = await serviceWorker.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(publicKey)
+        })
+        console.log('service worker registered')
+      }
+      register()
+      async function send () {
+        const title = document.getElementById('title').value
+        const body = document.getElementById('body').value
+        console.log('sending')
+        
+        await fetch("/push", {
+          method: "POST",
+          body: JSON.stringify({
+            subscription,
+            data: {
+              title,
+              body
+            }
+          }),
+          headers: {
+            "content-type": "application/json"
+          }
+        })
+        console.log('sent')
+      }
+      function urlBase64ToUint8Array(base64String) {
+        const padding = "=".repeat((4 - base64String.length % 4) % 4);
+        const base64 = (base64String + padding)
+          .replace(/\-/g, "+")
+          .replace(/_/g, "/");
+
+        const rawData = window.atob(base64);
+        const outputArray = new Uint8Array(rawData.length);
+
+        for (let i = 0; i < rawData.length; ++i) {
+          outputArray[i] = rawData.charCodeAt(i);
+        }
+        return outputArray;
+      }
+    </script>
+  </head>
+  <body>
+    Title: <input type="text" id="title" /><br>
+    Body: <input type="text" id="body" /><br>
+    <button onclick="send()">Send</button>
+  </body>
+</html>
